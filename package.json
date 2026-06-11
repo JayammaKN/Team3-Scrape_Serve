@@ -1,0 +1,12 @@
+{
+  "name": "team3-scrape-serve",
+  "version": "1.0.0",
+  "description": "A Playwright-based web scraping and data serving project",
+  "private": true,
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
