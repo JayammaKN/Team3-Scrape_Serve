@@ -1,6 +1,6 @@
-
 import { SCRAPER } from './config.js';
 import { chromium } from 'playwright';
+import { getUrls, closeDB } from './database.js';
 
 export async function scrapeRecipe(page, url) {
   let attempts = 0;
@@ -13,26 +13,25 @@ export async function scrapeRecipe(page, url) {
 
       const recipe = {};
 
-      // Getting Reciepe ID from URL 
+      // Getting Recipe ID from URL
       const match = url.match(/-(\d+)r\/?$/);
       recipe.recipe_id = match ? match[1] : url;
 
-      //Recipe Name 
+      // Recipe Name
       recipe.recipe_name = await getText(page, 'h1.rec-heading');
 
       // using Breadcrumb to get all categories
-
       const breadcrumbLinks = await page.$$('p.breadcrumbs a');
       const crumbs = [];
       for (const link of breadcrumbLinks) {
         const text = (await link.innerText()).trim();
         crumbs.push(text);
       }
-      recipe.food_category    = crumbs[1] || '';                  // Vegetarian Cuisine
-      recipe.cuisine_category = crumbs[3] || '';                  // South Indian / Punjabi
-      recipe.recipe_category  = crumbs[crumbs.length - 1] || ''; // last link = category
+      recipe.food_category    = crumbs[1] || '';
+      recipe.cuisine_category = crumbs[3] || '';
+      recipe.recipe_category  = crumbs[crumbs.length - 1] || '';
 
-      // Using Array to get Ingredients 
+      // Using Array to get Ingredients
       const ingredientElements = await page.$$('div#ingredients li');
       recipe.ingredients = [];
       for (const li of ingredientElements) {
@@ -54,17 +53,14 @@ export async function scrapeRecipe(page, url) {
         const headingLower = heading.toLowerCase().trim();
         const valueLower   = value.toLowerCase().trim();
 
-        // Preparation Time
         if (headingLower.includes('preparation')) {
           recipe.preparation_time = value.trim();
         }
 
-        // Cooking Time
         if (headingLower.includes('cooking')) {
           recipe.cooking_time = value.trim();
         }
 
-        // No of Servings — heading is always "Makes"
         if (
           headingLower.includes('makes')   ||
           headingLower.includes('serving') ||
@@ -80,7 +76,7 @@ export async function scrapeRecipe(page, url) {
         }
       }
 
-      // ── FIELD 8: Tags ─────────────────────────────────────────────────
+      // Tags
       const tagElements = await page.$$('ul.tags-list li a');
       const tags = [];
       for (const tag of tagElements) {
@@ -95,7 +91,7 @@ export async function scrapeRecipe(page, url) {
         .catch(() => '');
       recipe.recipe_description = (recipe.recipe_description || '').replace(/\s+/g, ' ').trim();
 
-      // Preparation Method 
+      // Preparation Method
       const methodSteps = await page.$$('ol#recipe-method li p');
       const steps = [];
       for (let i = 0; i < methodSteps.length; i++) {
@@ -104,7 +100,7 @@ export async function scrapeRecipe(page, url) {
       }
       recipe.preparation_method = steps.join(' | ');
 
-      //  Nutrient Values
+      // Nutrient Values
       const nutrientRows = await page.$$('div.col-md table tr');
       const nutrients = [];
       for (const row of nutrientRows) {
@@ -120,7 +116,7 @@ export async function scrapeRecipe(page, url) {
       // Recipe URL
       recipe.recipe_url = url;
 
-      //  Print all fields to console
+      // Print all fields to console
       printToConsole(recipe);
 
       return recipe;
@@ -139,7 +135,56 @@ export async function scrapeRecipe(page, url) {
   }
 }
 
-//  Get text from one element 
+// Reads URLs from DB → scrapes each one → returns all recipes for Module 3
+export async function scrapeAllRecipes() {
+  const urls = getUrls();
+  console.log(`\nModule 2 starting — ${urls.length} URLs to scrape`);
+
+  const browser = await chromium.launch({
+    headless: false,
+    slowMo: 500,
+  });
+
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 720 },
+    locale: 'en-US',
+    timezoneId: 'America/New_York',
+    extraHTTPHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    },
+  });
+
+  const page = await context.newPage();
+
+  const allRecipes = [];
+  let processed = 0;
+  let skipped = 0;
+
+  for (const url of urls) {
+    console.log(`\n[${processed + skipped + 1}/${urls.length}] Scraping: ${url}`);
+
+    const recipe = await scrapeRecipe(page, url);
+
+    if (recipe) {
+      allRecipes.push(recipe);
+      processed++;
+    } else {
+      skipped++;
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  console.log(`\nModule 2 done — Scraped: ${processed} | Skipped: ${skipped}`);
+  await browser.close();
+  closeDB();
+
+  return allRecipes;
+}
+
+// Get text from one element
 async function getText(page, selector) {
   const element = await page.$(selector);
   if (!element) return '';
@@ -168,25 +213,17 @@ function printToConsole(recipe) {
   console.log('─'.repeat(65));
 }
 
-// // sample test
-// const browser = await chromium.launch({
-//   headless: false,
-//   slowMo: 500,
-// });
 
+// TEMP TEST
+//import { chromium } from 'playwright';
+
+// const browser = await chromium.launch({ headless: false, slowMo: 500 });
 // const context = await browser.newContext({
 //   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 //   viewport: { width: 1280, height: 720 },
-//   locale: 'en-US',
-//   timezoneId: 'America/New_York',
-//   extraHTTPHeaders: {
-//     'Accept-Language': 'en-US,en;q=0.9',
-//     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-//   },
 // });
-
 // const page = await context.newPage();
-// await page.waitForTimeout(2000);
 // await scrapeRecipe(page, 'https://www.tarladalal.com/appam--how-to-make-appam--32844r');
 // await browser.close();
-// // 
+// TEMP TEST — scrapeAllRecipes (reads from DB)
+await scrapeAllRecipes();
