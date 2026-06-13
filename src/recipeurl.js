@@ -1,6 +1,6 @@
 console.log("Script started");
 import { chromium } from 'playwright';
-import fs from 'fs';
+import { initDB, saveUrls, closeDB } from './database.js';
 
 (async () => {
   const browser = await chromium.launch({
@@ -14,7 +14,6 @@ import fs from 'fs';
 
   const page = await context.newPage();
 
-  // Open page 
   async function open(url) {
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
@@ -35,7 +34,6 @@ import fs from 'fs';
     return new Set(links);
   }
 
-  // Collect category links
   async function getCategories() {
     const links = await page.locator('a').evaluateAll(anchors =>
       anchors
@@ -49,7 +47,6 @@ import fs from 'fs';
     return [...new Map(links.map(item => [item.href, item])).values()];
   }
 
-  // Collect subcategory "View All" links
   async function getSubCategories() {
     return new Set(
       await page.locator('a').evaluateAll(anchors =>
@@ -101,13 +98,9 @@ import fs from 'fs';
     console.log(`${count} recipes collected`);
   }
   
- // Save results
-  fs.writeFileSync(
-    'src/recipe-urls.json',
-    JSON.stringify([...allRecipes], null, 2)
-  );
-
-  console.log(`\nTotal recipes: ${allRecipes.size}`);
-
+  initDB();
+  saveUrls([...allRecipes]);
+  closeDB();
+  console.log(`\nTotal recipes: ${allRecipes.size} saved to database`);
   await browser.close();
 })();
