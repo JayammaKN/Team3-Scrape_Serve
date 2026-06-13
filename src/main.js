@@ -45,7 +45,7 @@ async function main() {
 
       // Module 2 — Scrape 14 fields from recipe page
      // const recipe = await scrapeRecipe(page, url);
-     const rawRecipe = await scrapeRecipe(page, url); ///Jaya added this
+     const rawRecipe = await scrapeRecipe(page, url); 
      if (!rawRecipe) { skipped++; continue; }
 
      const recipe = mapRecipeFields(rawRecipe);
