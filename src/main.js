@@ -37,16 +37,40 @@ async function main() {
   let processed = 0;
   let skipped = 0;
 
-  // Loop through each URL sequentially
   for (const url of urls) {
     try {
       console.log(`\n[${processed + skipped + 1}/${urls.length}] Scraping: ${url}`);
 
-      // Module 2 — Scrape 14 fields from recipe page
+      // Module 2 — Scrape 14 fields (returns lowercase keys)
       const recipe = await scrapeRecipe(page, url);
 
+      if (!recipe) {
+        skipped++;
+        continue;     }
+
+      // Convert Module 2 keys (lowercase) → Module 3 keys (PascalCase)
+      // Module 3 expects Recipe_ID, Ingredients etc. not recipe_id, ingredients
+      const recipe = {
+        Recipe_ID:          rawRecipe.recipe_id,
+        Recipe_Name:        rawRecipe.recipe_name,
+        Recipe_Category:    rawRecipe.recipe_category,
+        Food_Category:      rawRecipe.food_category,
+        //Ingredients:        Array.isArray(rawRecipe.ingredients),
+                    //          ? rawRecipe.ingredients.join(' | ')
+        Ingredients   :     rawRecipe.ingredients,
+        Preparation_Time:   rawRecipe.preparation_time,
+        Cooking_Time:       rawRecipe.cooking_time,
+        Tag:                rawRecipe.tag,
+        No_of_servings:     rawRecipe.no_of_servings,
+        Cuisine_category:   rawRecipe.cuisine_category,
+        Recipe_Description: rawRecipe.recipe_description,
+        Preparation_method: rawRecipe.preparation_method,
+        Nutrient_values:    rawRecipe.nutrient_values,
+        Recipe_URL:         rawRecipe.recipe_url,
+      };
+
       // Module 3 — Filter and store recipe into correct table
-      filterAndStore(recipe);
+      await filterAndStore(recipe);
 
       processed++;
 
