@@ -196,6 +196,7 @@ function printToConsole(recipe) {
   console.log('\n' + '─'.repeat(65));
   console.log('RECIPE SCRAPED');
   console.log('─'.repeat(65));
+
   console.log(`  1.  Recipe ID          : ${recipe.recipe_id}`);
   console.log(`  2.  Recipe Name        : ${recipe.recipe_name}`);
   console.log(`  3.  Recipe Category    : ${recipe.recipe_category}`);
@@ -226,4 +227,4 @@ function printToConsole(recipe) {
 // await scrapeRecipe(page, 'https://www.tarladalal.com/appam--how-to-make-appam--32844r');
 // await browser.close();
 // TEMP TEST — scrapeAllRecipes (reads from DB)
-await scrapeAllRecipes();
+// await scrapeAllRecipes();
