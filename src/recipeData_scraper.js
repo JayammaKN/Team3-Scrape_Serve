@@ -1,6 +1,6 @@
 import { SCRAPER } from './config.js';
-import { chromium } from 'playwright';
-import { getUrls, closeDB } from './database.js';
+//import { chromium } from 'playwright';
+//import { getUrls, closeDB } from './database.js';
 
 export async function scrapeRecipe(page, url) {
   let attempts = 0;
