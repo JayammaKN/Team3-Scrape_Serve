@@ -1,45 +1,35 @@
-import Database from 'better-sqlite3';
+import Database from "better-sqlite3";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+//const __dirname = dirname(fileURLToPath(import.meta.url));
+const db = new Database("../scrape_data.db");
 
-// new database for urls
-const db = new Database('./scrape_data.db');
-
-// creating table for urls if it doesn't exist
 export function initDB() {
   db.exec("CREATE TABLE IF NOT EXISTS urls (url TEXT)");
 }
- 
-// function to save urls to the database
-export function saveUrls(urls) {
-  for (const url of urls) {
-    db.prepare("INSERT INTO urls (url) VALUES (?)").run(url);
-  }
+export function clearUrls() {
+  db.exec("DELETE FROM urls");
 }
 
-// for integration with Sandhya's module 
 export function getUrls() {
-  return db.prepare("SELECT url FROM urls").all().map(r => r.url);
+  return db
+    .prepare("SELECT url FROM urls")
+    .all()
+    .map((r) => r.url);
 }
 
-//integration with Jaya's module
-export function createTables() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS urls (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      url TEXT NOT NULL UNIQUE);
-  `);
-  console.log('Tables created successfully.');
-}
-
-  //Debug: show tables
- /* const tables = db
-    .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-    .all();
-
-  console.log('Existing tables:', tables); 
-} */
-
-export function closeDB() {
+export function closeUrlDB() {
   db.close();
-  
-} 
+}
 
+export function saveAndGetUrls(urls) {
+  clearUrls();
+  const insert = db.prepare("INSERT OR IGNORE INTO urls (url) VALUES (?)");
+  const tx = db.transaction((items) => {
+    for (const url of items) {
+      insert.run(url);
+    }
+  });
+  tx(urls);
+  return getUrls();
+}

@@ -1,108 +1,101 @@
-import { initDb, submitTar, closeDB } from './dbWriter.js';
-import { getUrls } from './database.js';
-import { scrapeRecipe } from './recipeData_scraper.js';
-import { filterAndStore } from './data_Filter.js';
-import { chromium } from 'playwright';
+import { initDb, submitTar, closeDB } from "./dbWriter.js";
+//import * as excel from '../utils/excelreader.js';
+import { scrapeAllUrls } from "./recipeurl.js";
+import { scrapeRecipe } from "./recipeData_scraper.js";
+import { filterAndStore } from "./data_Filter.js";
+import { chromium } from "playwright";
+import { initDB, saveAndGetUrls, closeUrlDB, clearUrls } from "./database.js";
 
 async function main() {
-
   // Module 4 — Initialize DB and create all tables
-  //initDb(true);
-  initDb();
-  console.log('Database initialized.');
+  initDb(true);
+  console.log("Database initialized."); // Launch browser once — shared across all recipe scrapes
 
-  // Launch browser once — shared across all recipe scrapes
   const browser = await chromium.launch({
     headless: false,
     slowMo: 500,
-    args: ['--disable-blink-features=AutomationControlled'],
+    args: ["--disable-blink-features=AutomationControlled"],
   });
 
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     viewport: { width: 1280, height: 720 },
-    locale: 'en-US',
-    timezoneId: 'America/New_York',
+    locale: "en-US",
+    timezoneId: "America/New_York",
     extraHTTPHeaders: {
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      "Accept-Language": "en-US,en;q=0.9",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     },
   });
 
-  const page = await context.newPage();
+  const page = await context.newPage(); // Madhuri — Get all URLs from scrape_data.db
 
-  // Module 1 — Get all URLs from scrape_data.db
-  const urls = getUrls();
+  const scrapedUrls = await scrapeAllUrls(page);
+  const urls = saveAndGetUrls(scrapedUrls);
+  closeUrlDB();
   console.log(`\nTotal URLs to scrape: ${urls.length}`);
 
   let processed = 0;
   let skipped = 0;
 
-  // Loop through each URL sequentially
   for (const url of urls) {
     try {
-      console.log(`\n[${processed + skipped + 1}/${urls.length}] Scraping: ${url}`);
+      console.log(
+        `\n[${processed + skipped + 1}/${urls.length}] Scraping: ${url}`,
+      ); // Sandhya — Scrape 14 fields (returns lowercase keys)
 
-      // Module 2 — Scrape 14 fields from recipe page
-     // const recipe = await scrapeRecipe(page, url);
-     const rawRecipe = await scrapeRecipe(page, url); ///Jaya added this
-     if (!rawRecipe) { skipped++; continue; }
+      const rawRecipe = await scrapeRecipe(page, url);
 
-     const recipe = mapRecipeFields(rawRecipe);
-     filterAndStore(recipe);
+      if (!rawRecipe) {
+        skipped++;
+        continue;
+      }
 
+      console.log("Scraped data:", rawRecipe); // Convert Module 2 keys (lowercase) → Module 3 keys (PascalCase)
+      // Jaya module expects Recipe_ID, Ingredients etc. not recipe_id, ingredients
 
-      function mapRecipeFields(recipe) {
-  return {
-    Recipe_ID: recipe.recipe_id,
-    Recipe_Name: recipe.recipe_name,
-    Ingredients: Array.isArray(recipe.ingredients)
-      ? recipe.ingredients.join(' | ')
-      : (recipe.ingredients || ''),
-    // keep the rest too, in case insertRecipe (dbWriter) needs them
-    Recipe_Category: recipe.recipe_category,
-    Food_Category: recipe.food_category,
-    Preparation_Time: recipe.preparation_time,
-    Cooking_Time: recipe.cooking_time,
-    Tag: recipe.tag,
-    No_of_servings: recipe.no_of_servings,
-    Cuisine_category: recipe.cuisine_category,
-    Recipe_Description: recipe.recipe_description,
-    Preparation_method: recipe.preparation_method,
-    Nutrient_values: recipe.nutrient_values,
-    Recipe_URL: recipe.recipe_url,
-  };
-} 
+      const recipe = {
+        Recipe_ID: rawRecipe.recipe_id,
+        Recipe_Name: rawRecipe.recipe_name,
+        Recipe_Category: rawRecipe.recipe_category,
+        Food_Category: rawRecipe.food_category,
+        Ingredients: rawRecipe.ingredients,
+        Preparation_Time: rawRecipe.preparation_time,
+        Cooking_Time: rawRecipe.cooking_time,
+        Tag: rawRecipe.tag,
+        No_of_servings: rawRecipe.no_of_servings,
+        Cuisine_category: rawRecipe.cuisine_category,
+        Recipe_Description: rawRecipe.recipe_description,
+        Preparation_method: rawRecipe.preparation_method,
+        Nutrient_values: rawRecipe.nutrient_values,
+        Recipe_URL: rawRecipe.recipe_url,
+      }; // Jaya — Filter and store recipe(Smita) into correct table
 
-      // Module 3 — Filter and store recipe into correct table
-      filterAndStore(recipe);
+      await filterAndStore(recipe);
 
-      processed++;
+      processed++; // Small delay between recipes — avoids getting blocked
 
-      // Small delay between recipes — avoids getting blocked
       await page.waitForTimeout(1000);
-
     } catch (err) {
       console.log(`Skipped ${url}: ${err.message}`);
       skipped++;
     }
   }
 
-  console.log(`\nDone — Processed: ${processed} | Skipped: ${skipped}`);
+  console.log(`\nDone — Processed: ${processed} | Skipped: ${skipped}`); // Close browser
 
-  // Close browser
-  await browser.close();
+  await browser.close(); // Close DB connection
 
-  // Module 4 — Bundle DB into .tar for submission
-  await submitTar();
-  console.log('Database bundled into submission.tar');
-
-  // Close DB connection
   closeDB();
-  console.log('Database connection closed.');
+  console.log("Database connection closed."); // Module 4 — Bundle DB into .tar for submission
+
+  await submitTar();
+  console.log("Database bundled into submission.tar");
 }
 
-main().catch(err => {
-  console.error('Error in main:', err);
+main().catch((err) => {
+  console.error("Error in main:", err);
   process.exit(1);
 });

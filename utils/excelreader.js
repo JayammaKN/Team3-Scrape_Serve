@@ -1,148 +1,62 @@
-/**
- * utils/excelreader.js
- * -----------------------------------------------------------------
- * A small "toolbox" of simple functions for working with Excel (.xlsx)
- * files using the ExcelJS library.
- *
- * Every function here does ONE small job and has a simple name.
- */
 
 import ExcelJS from 'exceljs';
 
-// -------------------------------------------------------------------
-// 1. Open an excel file from disk and return the "workbook" object.
-//    A workbook = the whole .xlsx file (can contain many tabs/sheets).
-// -------------------------------------------------------------------
-async function openWorkbook(filePath) {
+export async function openWorkbook(filePath) {
   console.log('Opening Excel file:', filePath);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.readFile(filePath);
   return workbook;
 }
 
-// -------------------------------------------------------------------
-// 2. Save a workbook back to disk (overwrites the file).
-// -------------------------------------------------------------------
-async function saveWorkbook(workbook, filePath) {
+ export async function saveWorkbook(workbook, filePath) {
   console.log('Saving Excel file:', filePath);
   await workbook.xlsx.writeFile(filePath);
 }
 
-// -------------------------------------------------------------------
-// 3. Get one tab/sheet from a workbook by its EXACT name.
-//    Returns undefined (and prints a warning) if no exact match exists.
-// -------------------------------------------------------------------
-function getSheet(workbook, sheetName) {
-  const sheet = workbook.getWorksheet(sheetName);
-
+export function readColumn(sheet, headerName) {
   if (!sheet) {
-    console.warn(`Sheet not found (exact match): "${sheetName}"`);
-    console.log('Available sheets:', workbook.worksheets.map((s) => s.name));
+    console.warn(`  Warning: sheet not found when reading column "${headerName}"`);
+    return [];
   }
 
-  return sheet;
-}
+  let columnNumber = null;
 
-// -------------------------------------------------------------------
-// 3b. Find a sheet whose name CONTAINS a keyword (case-insensitive).
-//     Useful when sheet names have extra spaces or slightly different
-//     spelling, e.g. "TABLE_LCHF ELEMINATION " vs "TABLE_LCHF ELEMINATION".
-// -------------------------------------------------------------------
-function findSheet(workbook, keyword) {
-  return workbook.worksheets.find((sheet) =>
-    sheet.name.toLowerCase().includes(keyword.toLowerCase())
-  );
-}
-
-// -------------------------------------------------------------------
-// 4. Find which column number has a given header text.
-//    Looks in row 1 and row 2 (covers sheets where the title is on
-//    row 1 and the real headers are on row 2).
-//    Returns { columnNumber, headerRowNumber } or null if not found.
-// -------------------------------------------------------------------
-function findHeaderColumn(sheet, headerName) {
-  for (const rowNumber of [1, 2]) {
-    const row = sheet.getRow(rowNumber);
-    let found = null;
-
-    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      const text = (cell.value || '').toString().trim().toLowerCase();
-      if (text === headerName.toLowerCase()) {
-        found = colNumber;
+  // Check for row 1 first, then row 2 
+  for (const rowNum of [1, 2]) {
+    const row = sheet.getRow(rowNum);
+    row.eachCell((cell, colNum) => {
+      const cellText = (cell.value || '').toString().trim();
+      if (cellText.toLowerCase() === headerName.toLowerCase()) {
+        columnNumber = colNum;
       }
     });
-
-    if (found) {
-      return { columnNumber: found, headerRowNumber: rowNumber };
-    }
+    if (columnNumber) break;
   }
-  return null;
-}
 
-// -------------------------------------------------------------------
-// 5. Read every value below a given header into a plain array.
-//    Example: readColumn(sheet, 'Eliminate') -> ['ham', 'sausage', ...]
-//    All values are lower-cased so they are easy to compare later.
-// -------------------------------------------------------------------
-function readColumn(sheet, headerName) {
+  if (!columnNumber) {
+    console.warn(`  Warning: column "${headerName}" not found in sheet "${sheet.name}"`);
+    return [];
+  }
+
+  // Collect all non-empty values below the header row
   const values = [];
-  if (!sheet) return values;
+  sheet.eachRow((row, rowNum) => {
+    if (rowNum <= 2) return; // skip header rows
+    const cell = row.getCell(columnNumber);
+    const val = (cell.value || '').toString().trim();
+    if (val) values.push(val.toLowerCase()); // store lowercase for easy matching
+  });
 
-  const header = findHeaderColumn(sheet, headerName);
-  if (!header) {
-    console.warn(`Column "${headerName}" not found in sheet "${sheet.name}"`);
-    return values;
-  }
-
-  for (let r = header.headerRowNumber + 1; r <= sheet.rowCount; r++) {
-    const cellValue = sheet.getRow(r).getCell(header.columnNumber).value;
-    if (cellValue) {
-      values.push(cellValue.toString().trim().toLowerCase());
-    }
-  }
-
+  console.log(`  Read ${values.length} items from column "${headerName}"`);
   return values;
 }
-
-// -------------------------------------------------------------------
-// 6. Check if a value already exists somewhere in a given column.
-//    Used to avoid adding duplicate Recipe_IDs.
-// -------------------------------------------------------------------
-function columnContainsValue(sheet, columnNumber, value) {
-  if (!sheet) return false;
-
-  for (let r = 1; r <= sheet.rowCount; r++) {
-    const cellValue = sheet.getRow(r).getCell(columnNumber).value;
-    if (cellValue && cellValue.toString().trim() === value.toString().trim()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// -------------------------------------------------------------------
-// 7. Add a new row of values to the bottom of a sheet.
-//    rowValues is a simple object like:
-//      { 1: 'R0001', 2: 'Paneer Masala' }
-//    meaning column A = 'R0001', column B = 'Paneer Masala'
-// -------------------------------------------------------------------
-function appendRow(sheet, rowValues) {
+export function appendRow(sheet, data) {
   if (!sheet) return;
-
-  const newRowNumber = sheet.rowCount + 1;
-  const newRow = sheet.getRow(newRowNumber);
-
-  for (const columnNumber in rowValues) {
-    newRow.getCell(Number(columnNumber)).value = rowValues[columnNumber];
-  }
+  const row = sheet.addRow(Object.values(data));
+  row.commit();
 }
-export {
-  openWorkbook,
-  saveWorkbook,
-  getSheet,
-  findSheet,
-  findHeaderColumn,
-  readColumn,
-  columnContainsValue,
-  appendRow
-};
+export function clearSheet(sheet) {
+  if (!sheet) return;
+  sheet.spliceRows(1, sheet.rowCount);
+}
+

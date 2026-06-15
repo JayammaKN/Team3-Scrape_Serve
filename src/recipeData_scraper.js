@@ -1,6 +1,6 @@
 import { SCRAPER } from './config.js';
 import { chromium } from 'playwright';
-import { getUrls, closeDB } from './database.js';
+import { getUrls, closeUrlDB } from './database.js';
 
 export async function scrapeRecipe(page, url) {
   let attempts = 0;
@@ -179,7 +179,7 @@ export async function scrapeAllRecipes() {
 
   console.log(`\nModule 2 done — Scraped: ${processed} | Skipped: ${skipped}`);
   await browser.close();
-  closeDB();
+  closeUrlDB();
 
   return allRecipes;
 }
