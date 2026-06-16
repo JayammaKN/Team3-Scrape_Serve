@@ -11,6 +11,7 @@ export async function scrapeAllUrls(page) {
     await page.keyboard.press("Escape").catch(() => {});
   } // Get all recipe links from the current page
 
+  // Get all recipe links from the current page
   async function getRecipeLinks() {
     const links = await page
       .locator("a")
@@ -55,6 +56,7 @@ export async function scrapeAllUrls(page) {
   const categories = await getCategories();
   console.log(`Found ${categories.length} categories`); // Loop through categories and collect recipe URLs
 
+  // Loop through categories and collect recipe URLs
   const allRecipes = new Set();
   const recipesPerCategory = 50; // change this number for more or less
   for (const category of categories.slice(0, 5)) {
