@@ -1,3 +1,4 @@
+//This function creates and saves data in tables   
 import Database from 'better-sqlite3';
 import tar from 'tar-fs';
 import fs from 'fs';
@@ -13,10 +14,10 @@ const TABLES = {
   LFV_ELIMINATION: 'LFV_Elimination',
   LFV_ADD: 'LFV_Add',
   LCHF_ELIMINATION: 'LCHF_Elimination',
-  LCHF_ADD: 'LCHF_Add'
-  /*ALLERGIES_LFV_MILK: 'LFV_Allergy_Milk',
+  LCHF_ADD: 'LCHF_Add',
+  ALLERGIES_LFV_MILK: 'LFV_Allergy_Milk',
   ALLERGIES_LFV_NUT: 'LFV_Allergy_Nut',
-  ALLERGIES_LFV_OTHER: 'LFV_Allergy_Other'*/
+  ALLERGIES_LFV_OTHER: 'LFV_Allergy_Other'
 };
 
 //this block initializes database if alreday exist deletes, used synchronous so it waits until deleted else creates new tables  
@@ -54,9 +55,9 @@ function createTables() {
   db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.LFV_ADD} ${tableStructure}`);
   db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.LCHF_ELIMINATION} ${tableStructure}`);
   db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.LCHF_ADD} ${tableStructure}`);
-  /*db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.ALLERGIES_LFV_MILK} ${tableStructure}`);
+  db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.ALLERGIES_LFV_MILK} ${tableStructure}`);
   db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.ALLERGIES_LFV_NUT} ${tableStructure}`);
-  db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.ALLERGIES_LFV_OTHER} ${tableStructure}`);*/
+  db.exec(`CREATE TABLE IF NOT EXISTS ${TABLES.ALLERGIES_LFV_OTHER} ${tableStructure}`);
 
   console.log('Tables created successfully.');
 }

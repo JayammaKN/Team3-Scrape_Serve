@@ -1,3 +1,4 @@
+//This is main function driving all other modules 
 import { initDb, submitTar, closeDB } from "./dbWriter.js";
 import { scrapeAllUrls } from "./recipeurl.js";
 import { scrapeRecipe } from "./recipeData_scraper.js";
