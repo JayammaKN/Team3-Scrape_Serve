@@ -26,7 +26,7 @@ function getSheetSafe(workbook, sheetName) {
 }
 
 
-ingredientsMatchList(ingredients, wordList) {
+function ingredientsMatchList(ingredients, wordList) {
   // Turn the ingredients into one lowercase string of words
   let text = '';
   if (Array.isArray(ingredients)) {
