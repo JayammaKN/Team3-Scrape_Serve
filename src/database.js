@@ -1,13 +1,22 @@
+// SQLite database module for storing scraped recipe URLs
+// Uses better-sqlite3 (synchronous SQLite library)
+
 import Database from "better-sqlite3";
+
+// Connect to (or create) the URL database file
 const db = new Database("./scrape_data.db");
 
+// Create the urls table if it doesn't exist yet
 export function initDB() {
   db.exec("CREATE TABLE IF NOT EXISTS urls (url TEXT)");
 }
+
+// Delete all existing URLs from the table (fresh start before each run)
 export function clearUrls() {
   db.exec("DELETE FROM urls");
 }
 
+// Get all URLs currently stored in the database
 export function getUrls() {
   return db
     .prepare("SELECT url FROM urls")
@@ -15,12 +24,14 @@ export function getUrls() {
     .map((r) => r.url);
 }
 
+// Close the database connection
 export function closeUrlDB() {
   db.close();
 }
 
+// Clear old URLs, insert new ones, then return all stored URLs
 export function saveAndGetUrls(urls) {
-  clearUrls();
+  clearUrls();  // remove old URLs first
   const insert = db.prepare("INSERT OR IGNORE INTO urls (url) VALUES (?)");
   const tx = db.transaction((items) => {
     for (const url of items) {
@@ -28,5 +39,5 @@ export function saveAndGetUrls(urls) {
     }
   });
   tx(urls);
-  return getUrls();
+  return getUrls();  // return all URLs after saving
 }
