@@ -4,8 +4,7 @@
 export async function scrapeAllUrls(page) {
   async function open(url) {
     await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 120000,
+           timeout: 120000,
     });
     await page.waitForTimeout(2000);
     await page.keyboard.press("Escape").catch(() => {});
