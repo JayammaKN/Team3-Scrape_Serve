@@ -26,14 +26,32 @@ function getSheetSafe(workbook, sheetName) {
 }
 
 
-function ingredientsMatchList(ingredients, wordList) {
-  const text = (Array.isArray(ingredients) ? ingredients.join(' ') : (ingredients || '')).toLowerCase();
-  return wordList.some((word) => {
-    if (!word) return false;
-    const w = word.toLowerCase().trim();
-    const re = new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-    return re.test(text);
-  });
+ingredientsMatchList(ingredients, wordList) {
+  // Turn the ingredients into one lowercase string of words
+  let text = '';
+  if (Array.isArray(ingredients)) {
+    text = ingredients.join(' ').toLowerCase();
+  } else if (ingredients) {
+    text = ingredients.toLowerCase();
+  }
+
+  // Split that string into individual words
+  const ingredientWords = text.split(' ');
+
+  // Check each word in our list to see if it shows up in the ingredients
+  for (let i = 0; i < wordList.length; i++) {
+    const word = wordList[i];
+    if (!word) {
+      continue; // skip empty entries in the list
+    }
+    const cleanWord = word.toLowerCase().trim();
+
+    if (ingredientWords.includes(cleanWord)) {
+      return true; // found a match
+    }
+  }
+
+  return false; // checked everything, no match
 }
 
 let lists = null;
