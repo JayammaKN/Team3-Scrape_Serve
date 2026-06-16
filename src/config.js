@@ -1,3 +1,4 @@
+//config file for website path and excel file path
 export const BASE_URL = 'https://www.tarladalal.com/';
 
 export const SCRAPER = {

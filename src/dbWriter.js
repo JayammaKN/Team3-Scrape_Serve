@@ -1,3 +1,4 @@
+//This function creates and saves data in tables   
 import Database from 'better-sqlite3';
 import tar from 'tar-fs';
 import fs from 'fs';
