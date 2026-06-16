@@ -1,27 +1,25 @@
-// This function scrapes recipe URLs from tarladalal.com
-// It takes a 'page' object (from Playwright browser) and returns an array of recipe URLs
+// This function gets recipe URLs from tarladalal dot com
+// It needs a page object from Playwright browser and gives back a list of recipe URLs
 
 export async function scrapeAllUrls(page) {
 
-  // Open a webpage and wait for it to load
   async function open(url) {
     await page.goto(url, {
-      waitUntil: "domcontentloaded",  // wait until page content loads
-      timeout: 120000,                 // max wait time: 2 minutes
+      waitUntil: "domcontentloaded",
+      timeout: 120000,
     });
-    await page.waitForTimeout(2000);   // pause 2 seconds for page to settle
-    await page.keyboard.press("Escape").catch(() => {});  // close any popups
+    await page.waitForTimeout(2000);
+    await page.keyboard.press("Escape").catch(() => {});
   }
 
-  // Find all recipe links on the current page
-  // Recipe URLs on tarladalal end with pattern like -1234r
+  // Get all recipe links from the current page
   async function getRecipeLinks() {
     const links = await page
       .locator("a")
       .evaluateAll((anchors) =>
         anchors.map((a) => a.href).filter((href) => /-\d+r$/.test(href)),
       );
-    return new Set(links);  // return as Set to remove duplicates
+    return new Set(links);
   }
 
   // Get all category links from the page
@@ -33,11 +31,10 @@ export async function scrapeAllUrls(page) {
           .filter((a) => a.href.includes("/category/"))
           .map((a) => ({ text: a.textContent.trim(), href: a.href })),
       );
-    // Remove duplicates (same URL = same category)
     return [...new Map(links.map((item) => [item.href, item])).values()];
   }
 
-  // Find "View All" links inside a category
+  // Find "View All" sub category links
   async function getSubCategories() {
     return new Set(
       await page
@@ -54,48 +51,38 @@ export async function scrapeAllUrls(page) {
     );
   }
 
-  // Open the main website
   await open("https://www.tarladalal.com/");
 
-  // Click "Categories" button to open menu
   console.log("Opening Categories...");
   await page.getByRole("button", { name: "Categories" }).click();
 
-  // Get all categories from the menu
   const categories = await getCategories();
   console.log(`Found ${categories.length} categories`);
 
-  // Loop through first 5 categories
-  const allRecipes = new Set();         // empty Set to store collected recipe URLs
-  const recipesPerCategory = 50;        // how many recipes to collect per category
+  // Loop through categories and collect recipe URLs
+  const allRecipes = new Set();
+  const recipesPerCategory = 50;
   for (const category of categories.slice(0, 5)) {
     console.log(`\n--- ${category.text} ---`);
-    await open(category.href);          // open that category page
+    await open(category.href);
 
-    // Find all "View All" sub-category links on this page
     const subCategories = await getSubCategories();
-    let count = 0;                      // track how many recipes collected in this category
+    let count = 0;
 
-    // Visit each sub-category page
     for (const subUrl of subCategories) {
-      if (count >= recipesPerCategory) break;  // stop if we have enough
-      await open(subUrl);               // open the sub-category page
+      if (count >= recipesPerCategory) break;
+      await open(subUrl);
 
-      // Collect all recipe links from this sub-category page
       for (const recipe of await getRecipeLinks()) {
-        if (count >= recipesPerCategory) break;  // stop if we have enough
-
-        // Add to Set (Set auto-removes duplicate URLs)
+        if (count >= recipesPerCategory) break;
         if (!allRecipes.has(recipe)) {
           allRecipes.add(recipe);
           count++;
         }
       }
     }
-
     console.log(`${count} recipes collected`);
   }
 
-  // Return all collected URLs as an array
-  return [...allRecipes];  // convert Set to array and return
+  return [...allRecipes];
 }
