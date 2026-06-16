@@ -2,7 +2,6 @@
 // It needs a page object from Playwright browser and gives back a list of recipe URLs
 
 export async function scrapeAllUrls(page) {
-
   async function open(url) {
     await page.goto(url, {
       waitUntil: "domcontentloaded",
@@ -10,7 +9,7 @@ export async function scrapeAllUrls(page) {
     });
     await page.waitForTimeout(2000);
     await page.keyboard.press("Escape").catch(() => {});
-  }
+  } // Get all recipe links from the current page
 
   // Get all recipe links from the current page
   async function getRecipeLinks() {
@@ -20,9 +19,8 @@ export async function scrapeAllUrls(page) {
         anchors.map((a) => a.href).filter((href) => /-\d+r$/.test(href)),
       );
     return new Set(links);
-  }
+  } // Get all category links from the page
 
-  // Get all category links from the page
   async function getCategories() {
     const links = await page
       .locator("a")
@@ -32,9 +30,8 @@ export async function scrapeAllUrls(page) {
           .map((a) => ({ text: a.textContent.trim(), href: a.href })),
       );
     return [...new Map(links.map((item) => [item.href, item])).values()];
-  }
+  } // Find "View All" sub category links
 
-  // Find "View All" sub category links
   async function getSubCategories() {
     return new Set(
       await page
@@ -57,7 +54,7 @@ export async function scrapeAllUrls(page) {
   await page.getByRole("button", { name: "Categories" }).click();
 
   const categories = await getCategories();
-  console.log(`Found ${categories.length} categories`);
+  console.log(`Found ${categories.length} categories`); // Loop through categories and collect recipe URLs
 
   // Loop through categories and collect recipe URLs
   const allRecipes = new Set();

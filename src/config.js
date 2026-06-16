@@ -1,4 +1,4 @@
-// config.js
+//config file for website path and excel file path
 export const BASE_URL = 'https://www.tarladalal.com/';
 
 export const SCRAPER = {
@@ -7,3 +7,6 @@ export const SCRAPER = {
   timeout: 30000,
   maxRetries: 3,
 };
+
+export const INGREDIENTS_FILE = './IngredientsAndComorbidities-ScrapperHackathon.xlsx';
+ 
