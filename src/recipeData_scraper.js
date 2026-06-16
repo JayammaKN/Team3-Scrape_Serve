@@ -127,7 +127,7 @@ export async function scrapeRecipe(page, url) {
       console.warn(`  Error: ${err.message}`);
 
       if (attempts >= SCRAPER.maxRetries) {
-        console.error(`  ✗ Giving up on: ${url}`);
+        console.error(` Not Displaying Error: ${url}`);
         return null;
       }
       await page.waitForTimeout(5000 * attempts);
