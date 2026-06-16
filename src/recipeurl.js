@@ -52,7 +52,8 @@ export async function scrapeAllUrls(page) {
   console.log(`Found ${categories.length} categories`);
 
   const allRecipes = new Set();
-  const recipesPerCategory = 2; // ← change this number to get more/fewer per category
+  const recipesPerCategory = 20;
+
   for (const category of categories.slice(0, 5)) {
     console.log(`\n--- ${category.text} ---`);
     await open(category.href);

@@ -1,3 +1,8 @@
 node_modules/
 recipes.db
+<<<<<<< HEAD
 submission.tar.DS_Store
+=======
+scrape_data.db
+Team3_Scrape&Serve.tar
+>>>>>>> c330538cb651029646f2b349e8558b42ebe70806

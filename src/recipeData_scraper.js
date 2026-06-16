@@ -1,6 +1,5 @@
 import { SCRAPER } from './config.js';
-import { chromium } from 'playwright';
-import { getUrls, closeUrlDB } from './database.js';
+
 
 export async function scrapeRecipe(page, url) {
   let attempts = 0;
@@ -135,54 +134,6 @@ export async function scrapeRecipe(page, url) {
   }
 }
 
-// Reads URLs from DB → scrapes each one → returns all recipes for Module 3
-export async function scrapeAllRecipes() {
-  const urls = getUrls();
-  console.log(`\nModule 2 starting — ${urls.length} URLs to scrape`);
-
-  const browser = await chromium.launch({
-    headless: false,
-    slowMo: 500,
-  });
-
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    viewport: { width: 1280, height: 720 },
-    locale: 'en-US',
-    timezoneId: 'America/New_York',
-    extraHTTPHeaders: {
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    },
-  });
-
-  const page = await context.newPage();
-
-  const allRecipes = [];
-  let processed = 0;
-  let skipped = 0;
-
-  for (const url of urls) {
-    console.log(`\n[${processed + skipped + 1}/${urls.length}] Scraping: ${url}`);
-
-    const recipe = await scrapeRecipe(page, url);
-
-    if (recipe) {
-      allRecipes.push(recipe);
-      processed++;
-    } else {
-      skipped++;
-    }
-
-    await page.waitForTimeout(1000);
-  }
-
-  console.log(`\nModule 2 done — Scraped: ${processed} | Skipped: ${skipped}`);
-  await browser.close();
-  closeUrlDB();
-
-  return allRecipes;
-}
 
 // Get text from one element
 async function getText(page, selector) {
@@ -213,18 +164,3 @@ function printToConsole(recipe) {
   console.log(`  14. Recipe URL         : ${recipe.recipe_url}`);
   console.log('─'.repeat(65));
 }
-
-
-// TEMP TEST
-//import { chromium } from 'playwright';
-
-// const browser = await chromium.launch({ headless: false, slowMo: 500 });
-// const context = await browser.newContext({
-//   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-//   viewport: { width: 1280, height: 720 },
-// });
-// const page = await context.newPage();
-// await scrapeRecipe(page, 'https://www.tarladalal.com/appam--how-to-make-appam--32844r');
-// await browser.close();
-// TEMP TEST — scrapeAllRecipes (reads from DB)
-// await scrapeAllRecipes();

@@ -1,5 +1,4 @@
 import { initDb, submitTar, closeDB } from "./dbWriter.js";
-//import * as excel from '../utils/excelreader.js';
 import { scrapeAllUrls } from "./recipeurl.js";
 import { scrapeRecipe } from "./recipeData_scraper.js";
 import { filterAndStore } from "./data_Filter.js";
@@ -7,8 +6,8 @@ import { chromium } from "playwright";
 import { initDB, saveAndGetUrls, closeUrlDB, clearUrls } from "./database.js";
 
 async function main() {
-  // Module 4 — Initialize DB and create all tables
-  initDb(true);
+  
+  initDb(true); // Smita's Module — Initialize DB and create all tables
   console.log("Database initialized."); // Launch browser once — shared across all recipe scrapes
 
   const browser = await chromium.launch({
@@ -33,6 +32,7 @@ async function main() {
   const page = await context.newPage(); // Madhuri — Get all URLs from scrape_data.db
 
   const scrapedUrls = await scrapeAllUrls(page);
+  initDB(); // Madhuri — Initialize URL DB and save scraped URLs (removes duplicates)
   const urls = saveAndGetUrls(scrapedUrls);
   closeUrlDB();
   console.log(`\nTotal URLs to scrape: ${urls.length}`);
@@ -71,13 +71,15 @@ async function main() {
         Preparation_method: rawRecipe.preparation_method,
         Nutrient_values: rawRecipe.nutrient_values,
         Recipe_URL: rawRecipe.recipe_url,
-      }; // Jaya — Filter and store recipe(Smita) into correct table
+      }; 
 
-      await filterAndStore(recipe);
+      await filterAndStore(recipe);  // Jaya — Filter and store recipe(Smita) into correct table
 
-      processed++; // Small delay between recipes — avoids getting blocked
 
-      await page.waitForTimeout(1000);
+      processed++; 
+
+      await page.waitForTimeout(1000);  // Small delay between recipes — avoids getting blocked
+
     } catch (err) {
       console.log(`Skipped ${url}: ${err.message}`);
       skipped++;
@@ -89,7 +91,7 @@ async function main() {
   await browser.close(); // Close DB connection
 
   closeDB();
-  console.log("Database connection closed."); // Module 4 — Bundle DB into .tar for submission
+  console.log("Database connection closed."); // Smita's module — Bundle DB into .tar for submission
 
   await submitTar();
   console.log("Database bundled into submission.tar");

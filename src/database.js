@@ -1,8 +1,5 @@
 import Database from "better-sqlite3";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-//const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database("../scrape_data.db");
+const db = new Database("./scrape_data.db");
 
 export function initDB() {
   db.exec("CREATE TABLE IF NOT EXISTS urls (url TEXT)");
